@@ -1,20 +1,31 @@
-var createError = require("http-errors");
-var express = require("express");
-var path = require("path");
-var cookieParser = require("cookie-parser");
-var logger = require("morgan");
+const cookieSession = require("cookie-session");
+const config = require("./config");
+//^
+const express = require("express");
+const createError = require("http-errors");
+const path = require("path");
+const cookieParser = require("cookie-parser");
+const logger = require("morgan");
+//v
+const mongoose = require("mongoose");
+mongoose.connect(config.db, { useNewUrlParser: true });
 
-var indexRouter = require("./routes/index");
-var adminRouter = require("./routes/admin");
-var newsRouter = require("./routes/news");
-var quizRouter = require("./routes/quiz");
+const db = mongoose.connection;
+db.on("error", console.error.bind(console, "connection error:"));
+db.once("open", function() {
+  console.log(`\nJestem połączony z mongoDB Atlas :)\n`);
+});
 
-var app = express();
+const indexRouter = require("./routes/index");
+const adminRouter = require("./routes/admin");
+const newsRouter = require("./routes/news");
+const quizRouter = require("./routes/quiz");
+//^
+const app = express();
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "jade");
-
 app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -25,6 +36,15 @@ app.use((req, res, next) => {
   res.locals.path = req.path;
   next();
 });
+
+app.use(
+  cookieSession({
+    name: "session",
+    // ma się ładować z pliku konfiguracyjnego
+    keys: config.keySession,
+    maxAge: config.maxAgeSession
+  })
+);
 
 app.use("/", indexRouter);
 app.use("/admin", adminRouter);
